@@ -1,37 +1,68 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function RegisterForm() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
-    confirmPassword: ""
-  })
+    confirmPassword: "",
+  });
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    // TODO: Implement registration logic
-    console.log("Registration attempt:", formData)
-  }
+    e.preventDefault();
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    const { error } = await supabaseBrowser.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: {
+        data: {
+          full_name: formData.name,
+        },
+      },
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      router.push("/dashboard");
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
-    }))
-  }
+      [e.target.name]: e.target.value,
+    }));
+  };
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>Create an account</CardTitle>
-        <CardDescription>Join us to start creating and voting on polls</CardDescription>
+        <CardDescription>
+          Join us to start creating and voting on polls
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -89,5 +120,5 @@ export function RegisterForm() {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

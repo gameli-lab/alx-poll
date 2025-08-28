@@ -1,17 +1,19 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { User, LogOut, Settings, Plus } from "lucide-react"
-import Link from "next/link"
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { User, LogOut, Settings, Plus } from "lucide-react";
+import Link from "next/link";
+import { useAuth } from "@/lib/contexts/auth";
 
-interface HeaderProps {
-  isAuthenticated?: boolean
-  userName?: string
-  onLogout?: () => void
-}
+export function Header() {
+  const { user, signOut } = useAuth();
 
-export function Header({ isAuthenticated = false, userName, onLogout }: HeaderProps) {
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -20,11 +22,17 @@ export function Header({ isAuthenticated = false, userName, onLogout }: HeaderPr
             PollApp
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/polls" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link
+              href="/polls"
+              className="text-sm font-medium hover:text-primary transition-colors"
+            >
               Browse Polls
             </Link>
-            {isAuthenticated && (
-              <Link href="/polls/create" className="text-sm font-medium hover:text-primary transition-colors">
+            {user && (
+              <Link
+                href="/polls/create"
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
                 Create Poll
               </Link>
             )}
@@ -32,7 +40,7 @@ export function Header({ isAuthenticated = false, userName, onLogout }: HeaderPr
         </div>
 
         <div className="flex items-center space-x-4">
-          {isAuthenticated ? (
+          {user ? (
             <>
               <Button asChild size="sm">
                 <Link href="/polls/create" className="flex items-center gap-2">
@@ -40,12 +48,16 @@ export function Header({ isAuthenticated = false, userName, onLogout }: HeaderPr
                   New Poll
                 </Link>
               </Button>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
                     <User className="h-4 w-4" />
-                    {userName || "User"}
+                    {user.email}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -55,7 +67,10 @@ export function Header({ isAuthenticated = false, userName, onLogout }: HeaderPr
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onLogout} className="flex items-center gap-2">
+                  <DropdownMenuItem
+                    onClick={signOut}
+                    className="flex items-center gap-2"
+                  >
                     <LogOut className="h-4 w-4" />
                     Logout
                   </DropdownMenuItem>
@@ -75,5 +90,5 @@ export function Header({ isAuthenticated = false, userName, onLogout }: HeaderPr
         </div>
       </div>
     </header>
-  )
+  );
 }
