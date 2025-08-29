@@ -1,36 +1,53 @@
 export interface Poll {
   id: string
   title: string
-  description: string
+  description?: string
+  creator_id: string
+  creator?: User
+  status: 'active' | 'closed' | 'draft'
+  end_date?: string
+  is_public: boolean
+  allow_multiple_votes: boolean
+  created_at: string
+  updated_at: string
   options: PollOption[]
-  totalVotes: number
-  endDate: string
-  isActive: boolean
-  createdAt: string
-  createdBy: string
-  category?: string
-  tags?: string[]
+  total_votes: number
+  user_has_voted: boolean
 }
 
 export interface PollOption {
   id: string
+  poll_id: string
   text: string
-  votes: number
-  percentage: number
+  order_index: number
+  created_at: string
+  vote_count: number
+}
+
+export interface Vote {
+  id: string
+  poll_id: string
+  option_id: string
+  voter_id: string
+  created_at: string
 }
 
 export interface CreatePollData {
   title: string
-  description: string
+  description?: string
+  end_date?: string
+  is_public: boolean
+  allow_multiple_votes: boolean
   options: string[]
-  endDate: string
-  category?: string
-  tags?: string[]
 }
 
-export interface VoteData {
-  pollId: string
-  optionId: string
+export interface User {
+  id: string
+  email: string
+  full_name?: string
+  avatar_url?: string
+  created_at: string
+  updated_at: string
 }
 
 export interface PollFilters {

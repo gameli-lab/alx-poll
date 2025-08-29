@@ -1,56 +1,52 @@
-"use client"
-
 import { PollCard } from "@/components/polls/poll-card"
+import { getPolls } from "@/lib/actions/polls"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
+import Link from "next/link"
 
-// Sample data - replace with actual API calls
-const samplePolls = [
-  {
-    id: "1",
-    title: "What's your favorite programming language?",
-    description: "Let's see which programming language is most popular among developers in 2024.",
-    options: ["JavaScript", "Python", "TypeScript", "Rust", "Go"],
-    totalVotes: 156,
-    endDate: "2024-12-31T23:59:59",
-    isActive: true
-  },
-  {
-    id: "2",
-    title: "Best framework for building web applications?",
-    description: "Which framework do you prefer for building modern web applications?",
-    options: ["React", "Vue", "Angular", "Svelte", "Next.js"],
-    totalVotes: 89,
-    endDate: "2024-12-25T23:59:59",
-    isActive: true
-  },
-  {
-    id: "3",
-    title: "Preferred database for new projects?",
-    description: "What database technology would you choose for a new project?",
-    options: ["PostgreSQL", "MongoDB", "MySQL", "SQLite", "Redis"],
-    totalVotes: 234,
-    endDate: "2024-12-20T23:59:59",
-    isActive: false
-  }
-]
+export default async function PollsPage() {
+  const polls = await getPolls()
 
-export default function PollsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Polls</h1>
-        <p className="text-gray-600">Discover what the community is voting on</p>
+      <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Polls</h1>
+          <p className="text-gray-600">Discover what the community is voting on</p>
+        </div>
+        
+        <Button asChild>
+          <Link href="/polls/create" className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Create Poll
+          </Link>
+        </Button>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {samplePolls.map((poll) => (
-          <PollCard
-            key={poll.id}
-            {...poll}
-            onVote={(id) => console.log("Voting on poll:", id)}
-            onView={() => console.log("Viewing poll:", poll.id)}
-          />
-        ))}
-      </div>
+      {polls.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="max-w-md mx-auto">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No polls yet</h3>
+            <p className="text-gray-600 mb-6">
+              Be the first to create a poll and start engaging with the community!
+            </p>
+            <Button asChild>
+              <Link href="/polls/create">Create Your First Poll</Link>
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {polls.map((poll) => (
+            <PollCard
+              key={poll.id}
+              {...poll}
+              onVote={(id) => console.log("Voting on poll:", id)}
+              onView={() => console.log("Viewing poll:", poll.id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

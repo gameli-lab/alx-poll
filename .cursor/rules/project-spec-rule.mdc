@@ -1,0 +1,121 @@
+---
+description: Rules and conventions for using Cursor in the Polling App with QR Code Sharing project.
+globs:
+alwaysApply: true
+---
+
+# Cursor Usage Rules: Polling App with QR Code Sharing
+
+These are the rules Cursor must follow when generating or modifying code for the Polling App. Cursor should **always** adhere to these conventions to ensure maintainability, consistency, and alignment with the project’s architecture.
+
+---
+
+## General Principles
+
+1. **Framework & Language**
+
+   - Use **Next.js (App Router)** with **TypeScript**.
+   - All database and authentication are handled via **Supabase**.
+   - Styling uses **Tailwind CSS** + **shadcn/ui**.
+   - Do not introduce new frameworks or libraries unless explicitly instructed.
+
+2. **Project Structure**
+
+   - `/app`: All Next.js routes and layouts (App Router).
+   - `/components/ui`: Shared UI built on shadcn/ui.
+   - `/components/`: Custom reusable components.
+   - `/lib`: Supabase client setup, server actions, utility functions.
+   - `/types`: TypeScript types and interfaces.
+   - `/docs`: Documentation and architectural guides.
+
+3. **Component Rules**
+   - Use **Server Components** for data fetching and rendering.
+   - Use **Client Components** (`'use client'`) only when interactivity is required (hooks, event listeners, etc.).
+   - Component file naming: **PascalCase** (e.g., `PollCard.tsx`).
+   - Utilities and server actions: **camelCase** (e.g., `createPoll.ts`).
+
+---
+
+## Data & State Management
+
+- **Server Actions** must be used for all mutations (e.g., creating polls, casting votes).
+- **Server Components** must fetch data directly using the Supabase client.
+- Avoid `useEffect` for fetching server state. Use server rendering.
+- Use `useState` or `useReducer` only for local UI state inside Client Components.
+
+---
+
+## Database & Supabase Rules
+
+- Database schema lives in `supabase/migrations`.
+- All Supabase interactions use the client defined in `/lib/supabaseClient.ts`.
+- Supabase keys are never hardcoded — always pulled from environment variables (`.env.local`).
+- Use **Row Level Security (RLS)** and policies to enforce:
+  - Users can only vote once per poll.
+  - Poll creators can update/delete only their polls.
+- Authentication: Supabase Auth (email/password).
+
+---
+
+## Styling & UI
+
+- Use **Tailwind CSS** classes consistently for layout and spacing.
+- Use **shadcn/ui** components (e.g., `Button`, `Card`, `Input`) for consistency.
+- Custom UI components live in `/components/`.
+- Follow **mobile-first responsive design**.
+
+---
+
+## QR Code Feature
+
+- Use `qrcode.react` (or equivalent) for generating QR codes.
+- QR code generation happens **server-side** during poll creation and is displayed in the poll detail page.
+- Scanning a QR code should navigate directly to the poll’s unique route (`/poll/[id]`).
+
+---
+
+## Error Handling
+
+- Wrap Server Actions in `try/catch` blocks.
+- Use Next.js `error.tsx` files for segment-level error boundaries.
+- Display error messages using shadcn/ui components (e.g., `Alert`).
+
+---
+
+## Cursor-Specific Rules
+
+1. **When generating code**:
+
+   - Always check: Does it use **Server Actions** for mutations?
+   - Always check: Does it fetch with a **Server Component** and not client hooks?
+   - Always check: Are Supabase calls routed through `/lib/supabaseClient.ts`?
+   - Always check: No secrets are hardcoded.
+
+2. **When suggesting new libraries**:
+
+   - First verify if it’s already approved in the stack (Next.js, Supabase, Tailwind, shadcn/ui, qrcode.react).
+   - If not approved, **do not suggest** unless explicitly instructed.
+
+3. **When scaffolding new features**:
+
+   - Always create a minimal working example aligned with architecture.
+   - Do not over-engineer or generate unrelated boilerplate.
+   - Ensure it fits in the **App Router** and follows naming conventions.
+
+4. **When editing existing code**:
+   - Respect file structure and conventions.
+   - Do not move files unless explicitly instructed.
+   - Always keep Server/Client Component boundaries intact.
+
+---
+
+## Verification Checklist (for Cursor)
+
+Before completing any change, confirm:
+
+- ✅ Uses Next.js App Router.
+- ✅ Server Actions for mutations.
+- ✅ Server Components for data fetching.
+- ✅ Supabase client in `/lib`.
+- ✅ shadcn/ui + Tailwind for UI.
+- ✅ No hardcoded secrets.

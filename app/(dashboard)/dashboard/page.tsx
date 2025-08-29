@@ -1,44 +1,203 @@
-'use client'
+"use client"
 
-import { PollCard } from "@/components/polls/poll-card"
-import { usePolls } from "@/lib/hooks/use-polls"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PollCard } from "@/components/polls/poll-card"
+import { Plus, BarChart3, Clock, CheckCircle } from "lucide-react"
 import Link from "next/link"
-import { Plus } from "lucide-react"
+import { ProtectedRoute } from "@/components/auth/protected-route"
+import { useAuth } from "@/lib/hooks/use-auth"
+import { useEffect, useState } from "react"
+import { getUserPolls } from "@/lib/actions/polls"
+import { Poll } from "@/lib/types/poll"
 
-export default function DashboardPage() {
-  const { polls, isLoading, error } = usePolls()
+function DashboardContent() {
+  const { user } = useAuth()
+  const [userPolls, setUserPolls] = useState<Poll[]>([])
+  const [participatedPolls, setParticipatedPolls] = useState<Poll[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchUserPolls = async () => {
+      try {
+        const polls = await getUserPolls()
+        setUserPolls(polls)
+        // For now, we'll use empty array for participated polls
+        // This will be implemented when we add voting functionality
+        setParticipatedPolls([])
+      } catch (error) {
+        console.error('Error fetching user polls:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (user) {
+      fetchUserPolls()
+    }
+  }, [user])
+
+  const activePolls = userPolls.filter(p => p.status === 'active')
+  const totalVotes = userPolls.reduce((sum, p) => sum + p.total_votes, 0)
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span>Loading your polls...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Your Polls</h1>
-        <Button asChild>
-          <Link href="/polls/create" className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create Poll
-          </Link>
-        </Button>
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+        <p className="text-gray-600">
+          Welcome back, {user?.full_name || user?.email}! Manage your polls and track your activity.
+        </p>
       </div>
 
-      {isLoading && <div>Loading polls...</div>}
-      {error && <div className="text-red-500">{error}</div>}
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Polls</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{userPolls.length}</div>
+            <p className="text-xs text-muted-foreground">Polls created</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Polls</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activePolls.length}</div>
+            <p className="text-xs text-muted-foreground">Currently running</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Votes</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalVotes}</div>
+            <p className="text-xs text-muted-foreground">Across all polls</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Participated</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{participatedPolls.length}</div>
+            <p className="text-xs text-muted-foreground">Polls voted in</p>
+          </CardContent>
+        </Card>
+      </div>
 
-      {polls.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {polls.map(poll => (
-            <PollCard key={poll.id} poll={poll} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-16 border-2 border-dashed rounded-lg">
-          <h2 className="text-xl font-semibold">No polls yet</h2>
-          <p className="text-gray-500 mt-2">Get started by creating your first poll.</p>
-          <Button asChild className="mt-4">
-            <Link href="/polls/create">Create Poll</Link>
+      {/* Quick Actions */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>Create a new poll or browse existing ones</CardDescription>
+        </CardHeader>
+        <CardContent className="flex gap-4">
+          <Button asChild>
+            <Link href="/polls/create" className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Create New Poll
+            </Link>
           </Button>
-        </div>
-      )}
+          <Button variant="outline" asChild>
+            <Link href="/polls">Browse All Polls</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Tabs for different poll views */}
+      <Tabs defaultValue="my-polls" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="my-polls">My Polls</TabsTrigger>
+          <TabsTrigger value="participated">Participated</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="my-polls" className="space-y-4">
+          {userPolls.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="max-w-md mx-auto">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No polls yet</h3>
+                <p className="text-gray-600 mb-6">
+                  Start engaging your community by creating your first poll!
+                </p>
+                <Button asChild>
+                  <Link href="/polls/create">Create Your First Poll</Link>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {userPolls.map((poll) => (
+                <PollCard
+                  key={poll.id}
+                  {...poll}
+                  onVote={(id) => console.log("Voting on poll:", id)}
+                  onView={() => console.log("Viewing poll:", poll.id)}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="participated" className="space-y-4">
+          {participatedPolls.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="max-w-md mx-auto">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No participation yet</h3>
+                <p className="text-gray-600 mb-6">
+                  Start voting on polls to see your participation history here!
+                </p>
+                <Button asChild>
+                  <Link href="/polls">Browse Polls</Link>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {participatedPolls.map((poll) => (
+                <PollCard
+                  key={poll.id}
+                  {...poll}
+                  onVote={(id) => console.log("Voting on poll:", id)}
+                  onView={() => console.log("Viewing poll:", poll.id)}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   )
 }

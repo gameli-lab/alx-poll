@@ -1,18 +1,25 @@
-"use client";
+"use client"
 
-import { Button } from "@/components/ui/button";
+import Link from "next/link"
+import { useAuth } from "@/lib/hooks/use-auth"
+import { Button } from "@/components/ui/button"
+import { signOut } from "@/lib/actions/auth"
+import { User, LogOut } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { User, LogOut, Settings, Plus } from "lucide-react";
-import Link from "next/link";
-import { useAuth } from "@/lib/contexts/auth";
+} from "@/components/ui/dropdown-menu"
 
 export function Header() {
-  const { user, signOut } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth()
+
+  const handleSignOut = async () => {
+    await signOut()
+  }
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -22,15 +29,15 @@ export function Header() {
             PollApp
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
-            <Link
-              href="/polls"
+            <Link 
+              href="/polls" 
               className="text-sm font-medium hover:text-primary transition-colors"
             >
               Browse Polls
             </Link>
-            {user && (
-              <Link
-                href="/polls/create"
+            {isAuthenticated && (
+              <Link 
+                href="/polls/create" 
                 className="text-sm font-medium hover:text-primary transition-colors"
               >
                 Create Poll
@@ -38,51 +45,44 @@ export function Header() {
             )}
           </nav>
         </div>
-
+        
         <div className="flex items-center space-x-4">
-          {user ? (
-            <>
-              <Button asChild size="sm">
-                <Link href="/polls/create" className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  New Poll
-                </Link>
-              </Button>
-
+          {isLoading ? (
+            <div className="h-8 w-20 bg-muted animate-pulse rounded-md" />
+          ) : isAuthenticated ? (
+            <div className="flex items-center space-x-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
+                  <Button variant="ghost" className="flex items-center space-x-2">
                     <User className="h-4 w-4" />
-                    {user.email}
+                    <span className="hidden sm:inline-block">
+                      {user?.full_name || user?.email}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard" className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" />
-                      Dashboard
-                    </Link>
+                    <Link href="/dashboard">Dashboard</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={signOut}
-                    className="flex items-center gap-2"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Logout
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </>
+            </div>
           ) : (
             <div className="flex items-center space-x-2">
-              <Button variant="ghost" asChild size="sm">
+              <Button variant="ghost" asChild>
                 <Link href="/login">Sign In</Link>
               </Button>
-              <Button asChild size="sm">
+              <Button asChild>
                 <Link href="/register">Sign Up</Link>
               </Button>
             </div>
@@ -90,5 +90,5 @@ export function Header() {
         </div>
       </div>
     </header>
-  );
+  )
 }
