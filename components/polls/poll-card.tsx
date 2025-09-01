@@ -5,11 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Clock, Users, BarChart3 } from "lucide-react"
 import { Poll } from "@/lib/types/poll"
-
-interface PollCardProps extends Poll {
-  onVote?: (optionId: string) => void
-  onView?: () => void
-}
+import Link from "next/link"
 
 export function PollCard({
   id,
@@ -18,10 +14,8 @@ export function PollCard({
   options,
   total_votes,
   end_date,
-  status,
-  onVote,
-  onView
-}: PollCardProps) {
+  status
+}: Poll) {
   const isActive = status === 'active'
   const isClosed = status === 'closed'
 
@@ -58,12 +52,12 @@ export function PollCard({
         </div>
       </CardContent>
       <CardFooter className="flex gap-2">
-        <Button variant="outline" onClick={onView} className="flex-1">
-          View Details
+        <Button variant="outline" asChild className="flex-1">
+          <Link href={`/polls/${id}`}>View Details</Link>
         </Button>
-        {isActive && onVote && (
-          <Button onClick={() => onVote(id)} className="flex-1">
-            Vote Now
+        {isActive && (
+          <Button asChild className="flex-1">
+            <Link href={`/polls/${id}`}>Vote Now</Link>
           </Button>
         )}
       </CardFooter>

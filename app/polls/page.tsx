@@ -1,8 +1,8 @@
-import { PollCard } from "@/components/polls/poll-card"
 import { getPolls } from "@/lib/actions/polls"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import Link from "next/link"
+import { PollList } from "@/components/polls/poll-list"
 
 export default async function PollsPage() {
   const polls = await getPolls()
@@ -36,16 +36,7 @@ export default async function PollsPage() {
           </div>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {polls.map((poll) => (
-            <PollCard
-              key={poll.id}
-              {...poll}
-              onVote={(id) => console.log("Voting on poll:", id)}
-              onView={() => console.log("Viewing poll:", poll.id)}
-            />
-          ))}
-        </div>
+        <PollList polls={polls} />
       )}
     </div>
   )

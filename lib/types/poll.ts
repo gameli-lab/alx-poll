@@ -1,3 +1,5 @@
+import { User } from "./auth";
+
 export interface Poll {
   id: string
   title: string
@@ -30,24 +32,6 @@ export interface Vote {
   option_id: string
   voter_id: string
   created_at: string
-}
-
-export interface CreatePollData {
-  title: string
-  description?: string
-  end_date?: string
-  is_public: boolean
-  allow_multiple_votes: boolean
-  options: string[]
-}
-
-export interface User {
-  id: string
-  email: string
-  full_name?: string
-  avatar_url?: string
-  created_at: string
-  updated_at: string
 }
 
 export interface PollFilters {

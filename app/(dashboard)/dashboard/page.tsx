@@ -1,65 +1,40 @@
-"use client"
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PollCard } from "@/components/polls/poll-card"
 import { Plus, BarChart3, Clock, CheckCircle } from "lucide-react"
 import Link from "next/link"
-import { ProtectedRoute } from "@/components/auth/protected-route"
-import { useAuth } from "@/lib/hooks/use-auth"
-import { useEffect, useState } from "react"
 import { getUserPolls } from "@/lib/actions/polls"
 import { Poll } from "@/lib/types/poll"
+import { createServerClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
-function DashboardContent() {
-  const { user } = useAuth()
-  const [userPolls, setUserPolls] = useState<Poll[]>([])
-  const [participatedPolls, setParticipatedPolls] = useState<Poll[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+async function DashboardContent() {
+  const supabase = createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  useEffect(() => {
-    const fetchUserPolls = async () => {
-      try {
-        const polls = await getUserPolls()
-        setUserPolls(polls)
-        // For now, we'll use empty array for participated polls
-        // This will be implemented when we add voting functionality
-        setParticipatedPolls([])
-      } catch (error) {
-        console.error('Error fetching user polls:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
+  // Fetch the user's profile to get the full name
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", user!.id) // user is guaranteed to exist because of the check in DashboardPage
+    .single();
 
-    if (user) {
-      fetchUserPolls()
-    }
-  }, [user])
+  const userPolls = await getUserPolls();
+  // For now, we'll use empty array for participated polls
+  const participatedPolls: Poll[] = [];
 
   const activePolls = userPolls.filter(p => p.status === 'active')
   const totalVotes = userPolls.reduce((sum, p) => sum + p.total_votes, 0)
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="flex items-center space-x-2">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span>Loading your polls...</span>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
         <p className="text-gray-600">
-          Welcome back, {user?.full_name || user?.email}! Manage your polls and track your activity.
+          Welcome back, {profile?.full_name || profile?.email}! Manage your polls and track your activity.
         </p>
       </div>
 
@@ -151,14 +126,7 @@ function DashboardContent() {
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {userPolls.map((poll) => (
-                <PollCard
-                  key={poll.id}
-                  {...poll}
-                  onVote={(id) => console.log("Voting on poll:", id)}
-                  onView={() => console.log("Viewing poll:", poll.id)}
-                />
-              ))}
+              {userPolls.map((poll) => <PollCard key={poll.id} {...poll} />)}
             </div>
           )}
         </TabsContent>
@@ -178,14 +146,7 @@ function DashboardContent() {
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {participatedPolls.map((poll) => (
-                <PollCard
-                  key={poll.id}
-                  {...poll}
-                  onVote={(id) => console.log("Voting on poll:", id)}
-                  onView={() => console.log("Viewing poll:", poll.id)}
-                />
-              ))}
+              {participatedPolls.map((poll) => <PollCard key={poll.id} {...poll} />)}
             </div>
           )}
         </TabsContent>
@@ -194,10 +155,15 @@ function DashboardContent() {
   )
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return redirect('/login');
+  }
+
   return (
-    <ProtectedRoute>
-      <DashboardContent />
-    </ProtectedRoute>
+    <DashboardContent />
   )
 }

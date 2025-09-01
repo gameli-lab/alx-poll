@@ -1,11 +1,11 @@
 'use server'
 
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
 export async function signUp(formData: FormData) {
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerClient()
   
   const email = formData.get('email') as string
   const password = formData.get('password') as string
@@ -34,13 +34,13 @@ export async function signUp(formData: FormData) {
       revalidatePath('/')
       redirect('/dashboard')
     }
-  } catch (error) {
+  } catch {
     return { error: 'An unexpected error occurred' }
   }
 }
 
 export async function signIn(formData: FormData) {
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerClient()
   
   const email = formData.get('email') as string
   const password = formData.get('password') as string
@@ -63,25 +63,25 @@ export async function signIn(formData: FormData) {
       revalidatePath('/')
       redirect('/dashboard')
     }
-  } catch (error) {
+  } catch {
     return { error: 'An unexpected error occurred' }
   }
 }
 
 export async function signOut() {
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerClient()
   
   try {
     await supabase.auth.signOut()
     revalidatePath('/')
     redirect('/')
-  } catch (error) {
+  } catch {
     return { error: 'An unexpected error occurred' }
   }
 }
 
 export async function getCurrentUser() {
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerClient()
   
   try {
     const { data: { user }, error } = await supabase.auth.getUser()
@@ -98,7 +98,7 @@ export async function getCurrentUser() {
       .single()
 
     return profile
-  } catch (error) {
+  } catch {
     return null
   }
 }

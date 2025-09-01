@@ -1,8 +1,10 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
-import { User, AuthState } from "@/lib/types/auth"
+import { createContext, useCallback, useContext, useEffect, useState } from "react"
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js"
+import { supabaseBrowser } from "@/lib/supabase/client"
+import { AuthState } from "@/lib/types/auth"
+import { useRouter } from "next/navigation"
 
 interface AuthContextType extends AuthState {
   signOut: () => Promise<void>
@@ -11,12 +13,40 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const supabase = supabaseBrowser
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     isLoading: true,
     isAuthenticated: false
   })
+
+  const fetchUserProfile = useCallback(async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error fetching user profile:', error.message)
+        setAuthState({ user: null, isLoading: false, isAuthenticated: false })
+        return
+      }
+
+      setAuthState({
+        user: profile,
+        isLoading: false,
+        isAuthenticated: !!profile,
+      })
+    } catch (error) {
+      console.error('Unexpected error fetching user profile:', error)
+      setAuthState({ user: null, isLoading: false, isAuthenticated: false })
+    }
+  }, [])
 
   useEffect(() => {
     // Get initial session
@@ -31,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Error getting initial session:', error)
-        setAuthState(prev => ({ ...prev, isLoading: false }))
+        setAuthState({ user: null, isLoading: false, isAuthenticated: false })
       }
     }
 
@@ -39,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: AuthChangeEvent, session: Session | null) => {
         if (event === 'SIGNED_IN' && session?.user) {
           await fetchUserProfile(session.user.id)
         } else if (event === 'SIGNED_OUT') {
@@ -53,36 +83,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     )
 
     return () => subscription.unsubscribe()
-  }, [])
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      if (error) {
-        console.error('Error fetching user profile:', error)
-        setAuthState(prev => ({ ...prev, isLoading: false }))
-        return
-      }
-
-      setAuthState({
-        user: profile,
-        isLoading: false,
-        isAuthenticated: true
-      })
-    } catch (error) {
-      console.error('Error fetching user profile:', error)
-      setAuthState(prev => ({ ...prev, isLoading: false }))
-    }
-  }
+  }, [fetchUserProfile])
 
   const signOut = async () => {
     try {
       await supabase.auth.signOut()
+      router.push("/login")
     } catch (error) {
       console.error('Error signing out:', error)
     }

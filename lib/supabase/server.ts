@@ -1,25 +1,36 @@
+import { createServerClient as supabaseCreateServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
 
-export function createSupabaseServer() {
+export function createServerClient() {
   const cookieStore = cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+
+  return supabaseCreateServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        get: async (name: string) => {
+          return (await cookieStore).get(name)?.value;
         },
-        set(name: string, value: string, options: any) {
-          cookieStore.set(name, value, options);
+        set: async (name: string, value: string, options: CookieOptions) => {
+          try {
+            (await cookieStore).set({ name, value, ...options });
+          } catch {
+            // The `set` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
         },
-        remove(name: string, options: any) {
-          cookieStore.set(name, "", { ...options, maxAge: 0 });
-        }
-      }
+        remove: async (name: string, options: CookieOptions) => {
+          try {
+            (await cookieStore).set({ name, value: '', ...options });
+          } catch {
+            // The `delete` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
     }
   );
 }
-
-

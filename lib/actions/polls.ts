@@ -1,12 +1,12 @@
 'use server'
 
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { CreatePollData, Poll, PollOption } from '@/lib/types/poll'
+import { PollOption, Vote } from '@/lib/types/poll'
 
 export async function createPoll(formData: FormData) {
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerClient()
   
   try {
     // Get current user
@@ -16,17 +16,52 @@ export async function createPoll(formData: FormData) {
       return { error: 'You must be logged in to create a poll' }
     }
 
+    // Ensure a profile exists for the user, creating one if it doesn't.
+    // This is crucial because polls.creator_id has a foreign key to profiles.id.
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profileError) {
+      console.error('Error checking for profile:', profileError)
+      return { error: 'Failed to check user profile.' }
+    }
+
+    if (!profile) {
+      if (!user.email) {
+        return { error: 'User email is not available to create a profile.' }
+      }
+
+      const { error: createProfileError } = await supabase.from('profiles').insert({
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+      })
+
+      if (createProfileError) {
+        console.error('Error creating profile for user:', createProfileError)
+        return { error: 'Failed to create user profile for poll creation.' }
+      }
+    }
+
     // Extract form data
     const title = formData.get('title') as string
     const description = formData.get('description') as string
     const endDate = formData.get('endDate') as string
     const isPublic = formData.get('isPublic') === 'true'
     const allowMultipleVotes = formData.get('allowMultipleVotes') === 'true'
+    const category = formData.get('category') as string
     const options = formData.getAll('options') as string[]
 
     // Validation
     if (!title.trim()) {
       return { error: 'Poll title is required' }
+    }
+
+    if (!category?.trim()) {
+      return { error: 'Poll category is required' }
     }
     
     if (options.length < 2) {
@@ -50,7 +85,8 @@ export async function createPoll(formData: FormData) {
         end_date: endDate || null,
         is_public: isPublic,
         allow_multiple_votes: allowMultipleVotes,
-        status: 'active'
+        status: 'active',
+        category: category.trim()
       })
       .select()
       .single()
@@ -88,9 +124,12 @@ export async function createPoll(formData: FormData) {
 }
 
 export async function getPolls() {
-  const supabase = createServerSupabaseClient()
-  
+  const supabase = createServerClient()
+
   try {
+    // We need the user to check if they have voted on a poll
+    const { data: { user } } = await supabase.auth.getUser()
+
     const { data: polls, error } = await supabase
       .from('polls')
       .select(`
@@ -109,11 +148,16 @@ export async function getPolls() {
     }
 
     // Transform the data to match our Poll interface
-    return polls.map(poll => ({
-      ...poll,
-      total_votes: poll.votes?.length || 0,
-      user_has_voted: false // This will be updated based on current user
-    }))
+    return polls.map(p => {
+      const { votes, ...pollData } = p
+      const userHasVoted = user ? (votes as {voter_id: string}[]).some((vote) => vote.voter_id === user.id) : false
+      return {
+        ...pollData,
+        options: pollData.options || [],
+        total_votes: Array.isArray(votes) ? votes.length : 0,
+        user_has_voted: userHasVoted
+      }
+    })
   } catch (error) {
     console.error('Error in getPolls:', error)
     return []
@@ -121,46 +165,46 @@ export async function getPolls() {
 }
 
 export async function getPollById(id: string) {
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerClient()
   
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+
     const { data: poll, error } = await supabase
       .from('polls')
       .select(`
         *,
         creator:profiles!polls_creator_id_fkey(full_name, email),
-        options:poll_options(*)
+        options:poll_options(*),
+        votes(*)
       `)
       .eq('id', id)
-      .eq('is_public', true)
       .single()
 
-    if (error) {
+    if (error || !poll) {
       console.error('Error fetching poll:', error)
       return null
     }
 
-    // Get vote counts for each option
-    const { data: votes } = await supabase
-      .from('votes')
-      .select('option_id')
-      .eq('poll_id', id)
+    const { votes, ...pollData } = poll
 
-    const voteCounts = votes?.reduce((acc, vote) => {
+    const voteCounts = (votes as Vote[])?.reduce((acc: Record<string, number>, vote: Vote) => {
       acc[vote.option_id] = (acc[vote.option_id] || 0) + 1
       return acc
     }, {} as Record<string, number>) || {}
 
-    // Transform options with vote counts
-    const optionsWithVotes = poll.options.map(option => ({
+    const optionsWithVotes = (pollData.options as PollOption[]).map((option: PollOption) => ({
       ...option,
       vote_count: voteCounts[option.id] || 0
     }))
 
+    const userHasVoted = user ? (votes as Vote[]).some((vote) => vote.voter_id === user.id) : false
+
     return {
-      ...poll,
+      ...pollData,
       options: optionsWithVotes,
-      total_votes: Object.values(voteCounts).reduce((sum, count) => sum + count, 0)
+      total_votes: votes.length,
+      user_has_voted: userHasVoted
     }
   } catch (error) {
     console.error('Error in getPollById:', error)
@@ -169,7 +213,7 @@ export async function getPollById(id: string) {
 }
 
 export async function getUserPolls() {
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerClient()
   
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -182,7 +226,8 @@ export async function getUserPolls() {
       .from('polls')
       .select(`
         *,
-        options:poll_options(*)
+        options:poll_options(*),
+        votes(voter_id)
       `)
       .eq('creator_id', user.id)
       .order('created_at', { ascending: false })
@@ -192,22 +237,17 @@ export async function getUserPolls() {
       return []
     }
 
-    // Get vote counts for each poll
-    const pollsWithVotes = await Promise.all(
-      polls.map(async (poll) => {
-        const { data: votes } = await supabase
-          .from('votes')
-          .select('id')
-          .eq('poll_id', poll.id)
-
-        return {
-          ...poll,
-          total_votes: votes?.length || 0
-        }
-      })
-    )
-
-    return pollsWithVotes
+    // Transform the data to add total_votes and user_has_voted, avoiding N+1 queries
+    return polls.map(p => {
+      const { votes, ...pollData } = p
+      const userHasVoted = (votes as {voter_id: string}[]).some((vote) => vote.voter_id === user.id)
+      return {
+        ...pollData,
+        options: pollData.options || [],
+        total_votes: Array.isArray(votes) ? votes.length : 0,
+        user_has_voted: userHasVoted
+      }
+    })
   } catch (error) {
     console.error('Error in getUserPolls:', error)
     return []
@@ -215,7 +255,7 @@ export async function getUserPolls() {
 }
 
 export async function deletePoll(pollId: string) {
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerClient()
   
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser()

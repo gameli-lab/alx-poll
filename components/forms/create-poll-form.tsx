@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Switch } from "@/components/ui/switch"
 import { Loader2, Plus, X, Calendar } from "lucide-react"
-import { useRouter } from "next/navigation"
 
 export function CreatePollForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -18,7 +17,6 @@ export function CreatePollForm() {
   const [options, setOptions] = useState(["", ""]) // Start with 2 empty options
   const [isPublic, setIsPublic] = useState(true)
   const [allowMultipleVotes, setAllowMultipleVotes] = useState(false)
-  const router = useRouter()
 
   const addOption = () => {
     if (options.length < 10) { // Limit to 10 options
@@ -43,11 +41,6 @@ export function CreatePollForm() {
     setError(null)
 
     try {
-      // Add options to form data
-      options.forEach((option, index) => {
-        formData.append('options', option)
-      })
-
       // Add switch values to form data
       formData.append('isPublic', isPublic.toString())
       formData.append('allowMultipleVotes', allowMultipleVotes.toString())
@@ -57,7 +50,7 @@ export function CreatePollForm() {
       if (result?.error) {
         setError(result.error)
       }
-    } catch (error) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)
@@ -106,6 +99,19 @@ export function CreatePollForm() {
             />
           </div>
           
+          {/* Poll Category */}
+          <div className="space-y-2">
+            <Label htmlFor="category">Category *</Label>
+            <Input
+              id="category"
+              name="category"
+              type="text"
+              placeholder="e.g. Technology, Lifestyle"
+              required
+              disabled={isLoading}
+            />
+          </div>
+
           {/* Poll Options */}
           <div className="space-y-3">
             <Label>Poll Options *</Label>

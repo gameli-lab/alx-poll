@@ -24,6 +24,7 @@ CREATE TABLE public.polls (
   end_date TIMESTAMP WITH TIME ZONE,
   is_public BOOLEAN DEFAULT true,
   allow_multiple_votes BOOLEAN DEFAULT false,
+  category TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -89,8 +90,8 @@ CREATE POLICY "Users can delete their own polls" ON public.polls
 CREATE POLICY "Anyone can view poll options for public polls" ON public.poll_options
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM public.polls 
-      WHERE id = poll_id 
+      SELECT 1 FROM public.polls
+      WHERE id = poll_id
       AND (is_public = true OR auth.uid() = creator_id)
     )
   );
@@ -98,8 +99,8 @@ CREATE POLICY "Anyone can view poll options for public polls" ON public.poll_opt
 CREATE POLICY "Poll creators can manage options" ON public.poll_options
   FOR ALL USING (
     EXISTS (
-      SELECT 1 FROM public.polls 
-      WHERE id = poll_id 
+      SELECT 1 FROM public.polls
+      WHERE id = poll_id
       AND auth.uid() = creator_id
     )
   );
@@ -108,8 +109,8 @@ CREATE POLICY "Poll creators can manage options" ON public.poll_options
 CREATE POLICY "Users can view votes for public polls" ON public.votes
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM public.polls 
-      WHERE id = poll_id 
+      SELECT 1 FROM public.polls
+      WHERE id = poll_id
       AND (is_public = true OR auth.uid() = creator_id)
     )
   );
@@ -118,8 +119,8 @@ CREATE POLICY "Authenticated users can vote" ON public.votes
   FOR INSERT WITH CHECK (
     auth.uid() = voter_id
     AND EXISTS (
-      SELECT 1 FROM public.polls 
-      WHERE id = poll_id 
+      SELECT 1 FROM public.polls
+      WHERE id = poll_id
       AND status = 'active'
     )
   );
@@ -132,7 +133,11 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.profiles (id, email, full_name)
-  VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'full_name');
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1))
+  );
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
