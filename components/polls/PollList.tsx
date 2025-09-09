@@ -1,8 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { PollCard } from './PollCard';
 import { Poll } from '@/lib/types';
-import { usePolls } from '@/lib/hooks/usePolls';
+import { createClient } from '@/lib/supabase/client';
 
 interface PollListProps {
   filters?: {
@@ -13,7 +14,48 @@ interface PollListProps {
 }
 
 export function PollList({ filters }: PollListProps) {
-  const { polls, isLoading, error } = usePolls(filters);
+  const [polls, setPolls] = useState<Poll[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const fetchPolls = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        let query = supabase.from('polls').select('id, title, description, options, author, isActive, allowMultiple, expiresAt, createdAt, updatedAt, totalVotes');
+
+        if (filters?.search) {
+          query = query.ilike('title', `%${filters.search}%`);
+        }
+
+        if (filters?.author) {
+          query = query.eq('author', filters.author);
+        }
+
+        if (filters?.isActive !== undefined) {
+          query = query.eq('isActive', filters.isActive);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          throw error;
+        }
+
+        setPolls(data as Poll[]);
+      } catch (err) {
+        console.dir(err);
+        setError(err instanceof Error ? err.message : 'Error loading polls');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPolls();
+  }, [supabase, filters]);
 
   if (isLoading) {
     return (

@@ -8,11 +8,39 @@ export interface User {
   updatedAt: Date;
 }
 
-// Poll types
+// Database types (matching Supabase schema)
 export interface Poll {
   id: string;
   title: string;
   description?: string;
+  author_id: string;
+  is_active: boolean;
+  allow_multiple: boolean;
+  expires_at?: string; // ISO string from database
+  created_at: string; // ISO string from database
+  updated_at: string; // ISO string from database
+  total_votes: number;
+}
+
+export interface PollOption {
+  id: string;
+  poll_id: string;
+  text: string;
+  votes: number;
+  created_at: string; // ISO string from database
+  updated_at: string; // ISO string from database
+}
+
+export interface Vote {
+  id: string;
+  poll_id: string;
+  option_id: string;
+  user_id: string;
+  created_at: string; // ISO string from database
+}
+
+// Application types (with computed fields and relationships)
+export interface PollWithDetails extends Poll {
   options: PollOption[];
   author: User;
   isActive: boolean;
@@ -23,16 +51,13 @@ export interface Poll {
   totalVotes: number;
 }
 
-export interface PollOption {
-  id: string;
-  text: string;
-  votes: number;
+export interface PollOptionWithDetails extends PollOption {
   pollId: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// Vote types
-export interface Vote {
-  id: string;
+export interface VoteWithDetails extends Vote {
   pollId: string;
   optionId: string;
   userId: string;
