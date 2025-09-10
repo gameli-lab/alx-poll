@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Layout } from "@/components/layout/Layout";
 import { PollList } from "@/components/polls/PollList";
 
@@ -15,15 +21,15 @@ export default function Home() {
               Create and Vote on Polls
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Engage with your community through interactive polls. 
-              Create questions, gather opinions, and make data-driven decisions.
+              Engage with your community through interactive polls. Create
+              questions, gather opinions, and make data-driven decisions.
             </p>
             <div className="flex gap-4 justify-center">
               <Button asChild size="lg">
                 <Link href="/polls/create">Create Poll</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link href="/polls">Browse Polls</Link>
+                <Link href="/my-polls">Dashboard</Link>
               </Button>
             </div>
           </div>
@@ -45,11 +51,12 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    No complex setup required. Just ask your question, add options, and share with your community.
+                    No complex setup required. Just ask your question, add
+                    options, and share with your community.
                   </p>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>Real-time Results</CardTitle>
@@ -59,11 +66,12 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Watch as responses come in and see live charts and statistics for your polls.
+                    Watch as responses come in and see live charts and
+                    statistics for your polls.
                   </p>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>Secure & Private</CardTitle>
@@ -73,7 +81,8 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Vote anonymously or with authentication. Your privacy and data security are our top priorities.
+                    Vote anonymously or with authentication. Your privacy and
+                    data security are our top priorities.
                   </p>
                 </CardContent>
               </Card>

@@ -1,14 +1,20 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { updatePoll } from '@/lib/actions/polls';
-import { CreatePollForm as CreatePollFormType } from '@/lib/types';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { updatePoll } from "@/lib/actions/polls";
+import { CreatePollForm as CreatePollFormType } from "@/lib/types";
 
 interface EditPollFormProps {
   poll: Record<string, unknown>;
@@ -16,53 +22,59 @@ interface EditPollFormProps {
 
 export function EditPollForm({ poll }: EditPollFormProps) {
   const [formData, setFormData] = useState<CreatePollFormType>({
-    title: (poll.title as string) || '',
-    description: (poll.description as string) || '',
-    options: (poll.options as Array<Record<string, unknown>>)?.map((option) => option.text as string) || ['', ''],
+    title: (poll.title as string) || "",
+    description: (poll.description as string) || "",
+    options: (poll.options as Array<Record<string, unknown>>)?.map(
+      (option) => option.text as string,
+    ) || ["", ""],
     allowMultiple: (poll.allow_multiple as boolean) || false,
-    expiresAt: poll.expires_at ? new Date(poll.expires_at as string) : undefined,
+    expiresAt: poll.expires_at
+      ? new Date(poll.expires_at as string)
+      : undefined,
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [countdown, setCountdown] = useState(2);
-  
+
   const router = useRouter();
 
   const addOption = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      options: [...prev.options, '']
+      options: [...prev.options, ""],
     }));
   };
 
   const removeOption = (index: number) => {
     if (formData.options.length > 2) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        options: prev.options.filter((_, i) => i !== index)
+        options: prev.options.filter((_, i) => i !== index),
       }));
     }
   };
 
   const updateOption = (index: number, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      options: prev.options.map((option, i) => i === index ? value : option)
+      options: prev.options.map((option, i) => (i === index ? value : option)),
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
     setSuccess(false);
     setCountdown(2);
 
-    const validOptions = formData.options.filter(option => option.trim() !== '');
-    
+    const validOptions = formData.options.filter(
+      (option) => option.trim() !== "",
+    );
+
     if (validOptions.length < 2) {
-      setError('Please provide at least 2 options');
+      setError("Please provide at least 2 options");
       setIsLoading(false);
       return;
     }
@@ -72,34 +84,37 @@ export function EditPollForm({ poll }: EditPollFormProps) {
         ...formData,
         options: validOptions,
       });
-      
+
       setSuccess(true);
       setIsLoading(false);
-      
-      // Start countdown and redirect
-      const countdownInterval = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval);
-            router.push('/my-polls');
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update poll');
+      setError(err instanceof Error ? err.message : "Failed to update poll");
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    let countdownInterval: NodeJS.Timeout;
+    if (success && countdown > 0) {
+      countdownInterval = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (success && countdown === 0) {
+      router.push("/my-polls");
+    }
+
+    return () => {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
+    };
+  }, [success, countdown, router]);
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle>Edit Poll</CardTitle>
-        <CardDescription>
-          Update your poll details and options
-        </CardDescription>
+        <CardDescription>Update your poll details and options</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -109,7 +124,9 @@ export function EditPollForm({ poll }: EditPollFormProps) {
               id="title"
               placeholder="What is your poll about?"
               value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, title: e.target.value }))
+              }
               required
               disabled={success}
             />
@@ -121,7 +138,12 @@ export function EditPollForm({ poll }: EditPollFormProps) {
               id="description"
               placeholder="Provide more context about your poll..."
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
               disabled={success}
             />
           </div>
@@ -166,11 +188,19 @@ export function EditPollForm({ poll }: EditPollFormProps) {
             <Input
               id="expiresAt"
               type="datetime-local"
-              value={formData.expiresAt ? new Date(formData.expiresAt).toISOString().slice(0, 16) : ''}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                expiresAt: e.target.value ? new Date(e.target.value) : undefined 
-              }))}
+              value={
+                formData.expiresAt
+                  ? new Date(formData.expiresAt).toISOString().slice(0, 16)
+                  : ""
+              }
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  expiresAt: e.target.value
+                    ? new Date(e.target.value)
+                    : undefined,
+                }))
+              }
               disabled={success}
             />
           </div>
@@ -180,7 +210,12 @@ export function EditPollForm({ poll }: EditPollFormProps) {
               <input
                 type="checkbox"
                 checked={formData.allowMultiple}
-                onChange={(e) => setFormData(prev => ({ ...prev, allowMultiple: e.target.checked }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    allowMultiple: e.target.checked,
+                  }))
+                }
                 className="rounded"
                 disabled={success}
               />
@@ -197,23 +232,34 @@ export function EditPollForm({ poll }: EditPollFormProps) {
                 <span className="font-medium">Poll updated successfully!</span>
               </div>
               <p className="text-green-700">
-                Redirecting to my polls in {countdown} second{countdown !== 1 ? 's' : ''}...
+                Redirecting to my polls in {countdown} second
+                {countdown !== 1 ? "s" : ""}...
               </p>
             </div>
           )}
 
           {error && (
-            <div className="text-sm text-destructive text-center">
-              {error}
-            </div>
+            <div className="text-sm text-destructive text-center">{error}</div>
           )}
 
           <div className="flex gap-4">
-            <Button type="button" variant="outline" onClick={() => router.back()}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || success} className="flex-1">
-              {isLoading ? 'Updating Poll...' : success ? 'Poll Updated!' : 'Update Poll'}
+            <Button
+              type="submit"
+              disabled={isLoading || success}
+              className="flex-1"
+            >
+              {isLoading
+                ? "Updating Poll..."
+                : success
+                  ? "Poll Updated!"
+                  : "Update Poll"}
             </Button>
           </div>
         </form>

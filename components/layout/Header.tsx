@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/lib/contexts/AuthProvider';
-import { createClient } from '@/lib/supabase/client';
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/lib/contexts/AuthProvider";
+import { createClient } from "@/lib/supabase/client";
 
 export function Header() {
   const { user } = useAuth();
@@ -32,18 +32,23 @@ export function Header() {
           <Link href="/polls">
             <Button variant="ghost">Browse Polls</Button>
           </Link>
-          
+
           {user ? (
             <>
               <Link href="/polls/create">
                 <Button>Create Poll</Button>
               </Link>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 w-8 rounded-full"
+                  >
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback>
+                        {user.email?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
