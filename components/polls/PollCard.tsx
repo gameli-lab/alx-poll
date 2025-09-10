@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Poll } from '@/lib/types';
+import { PollWithDetails } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 
 interface PollCardProps {
-  poll: Poll;
+  poll: PollWithDetails;
 }
 
 export function PollCard({ poll }: PollCardProps) {

@@ -7,16 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { createPoll } from '@/lib/actions/polls';
+import { updatePoll } from '@/lib/actions/polls';
 import { CreatePollForm as CreatePollFormType } from '@/lib/types';
 
-export function CreatePollForm() {
+interface EditPollFormProps {
+  poll: Record<string, unknown>;
+}
+
+export function EditPollForm({ poll }: EditPollFormProps) {
   const [formData, setFormData] = useState<CreatePollFormType>({
-    title: '',
-    description: '',
-    options: ['', ''],
-    allowMultiple: false,
-    expiresAt: undefined,
+    title: (poll.title as string) || '',
+    description: (poll.description as string) || '',
+    options: (poll.options as Array<Record<string, unknown>>)?.map((option) => option.text as string) || ['', ''],
+    allowMultiple: (poll.allow_multiple as boolean) || false,
+    expiresAt: poll.expires_at ? new Date(poll.expires_at as string) : undefined,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -64,7 +68,7 @@ export function CreatePollForm() {
     }
 
     try {
-      await createPoll({
+      await updatePoll(poll.id as string, {
         ...formData,
         options: validOptions,
       });
@@ -77,14 +81,14 @@ export function CreatePollForm() {
         setCountdown(prev => {
           if (prev <= 1) {
             clearInterval(countdownInterval);
-            router.push('/polls');
+            router.push('/my-polls');
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create poll');
+      setError(err instanceof Error ? err.message : 'Failed to update poll');
       setIsLoading(false);
     }
   };
@@ -92,9 +96,9 @@ export function CreatePollForm() {
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Create New Poll</CardTitle>
+        <CardTitle>Edit Poll</CardTitle>
         <CardDescription>
-          Create a poll to gather opinions from your community
+          Update your poll details and options
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -190,10 +194,10 @@ export function CreatePollForm() {
                 <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs">✓</span>
                 </div>
-                <span className="font-medium">Poll created successfully!</span>
+                <span className="font-medium">Poll updated successfully!</span>
               </div>
               <p className="text-green-700">
-                Redirecting to polls page in {countdown} second{countdown !== 1 ? 's' : ''}...
+                Redirecting to my polls in {countdown} second{countdown !== 1 ? 's' : ''}...
               </p>
             </div>
           )}
@@ -209,7 +213,7 @@ export function CreatePollForm() {
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading || success} className="flex-1">
-              {isLoading ? 'Creating Poll...' : success ? 'Poll Created!' : 'Create Poll'}
+              {isLoading ? 'Updating Poll...' : success ? 'Poll Updated!' : 'Update Poll'}
             </Button>
           </div>
         </form>

@@ -90,7 +90,7 @@ export function LoginForm() {
             </form>
 
             <div className="mt-4 text-center text-sm">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/auth/signup" className="text-primary hover:underline">
                 Sign up
               </Link>
@@ -102,7 +102,7 @@ export function LoginForm() {
           <div className="text-center">
             <h3 className="text-xl font-semibold">Check your email</h3>
             <p className="text-sm text-muted-foreground mt-2">
-              We've sent a login link to your email address.
+              We&apos;ve sent a login link to your email address.
             </p>
           </div>
         </CardContent>

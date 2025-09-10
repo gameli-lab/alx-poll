@@ -137,7 +137,7 @@ export function SignupForm() {
           <div className="text-center">
             <h3 className="text-xl font-semibold">Check your email</h3>
             <p className="text-sm text-muted-foreground mt-2">
-              We've sent a confirmation link to your email address.
+              We&apos;ve sent a confirmation link to your email address.
             </p>
           </div>
         </CardContent>
