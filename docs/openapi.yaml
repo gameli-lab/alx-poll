@@ -1,0 +1,142 @@
+openapi: 3.1.0
+info:
+  title: Polling App with QR Code Sharing API
+  version: 1.0.0
+  description: API for managing polls, options, and votes, including QR code sharing capabilities.
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://your-production-url.com
+    description: Production server (replace with actual URL)
+paths:
+  /api/vote/submit:
+    post:
+      summary: Submit a vote for a poll option
+      description: Allows an authenticated user to cast a vote for a specific option within a poll.
+      operationId: submitVote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pollId
+                - optionId
+              properties:
+                pollId:
+                  type: string
+                  format: uuid
+                  description: The ID of the poll to vote on.
+                optionId:
+                  type: string
+                  format: uuid
+                  description: The ID of the option to vote for.
+      responses:
+        '200':
+          description: Vote submitted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  poll_id:
+                    type: string
+                    format: uuid
+                  option_id:
+                    type: string
+                    format: uuid
+                  user_id:
+                    type: string
+                    format: uuid
+                  created_at:
+                    type: string
+                    format: date-time
+        '401':
+          description: Unauthorized - user not logged in.
+        '400':
+          description: Bad Request - e.g., poll not found, poll inactive, poll expired, user already voted.
+        '500':
+          description: Internal server error.
+      security:
+        - cookieAuth: []
+  /api/vote/remove:
+    delete:
+      summary: Remove a vote for a poll option
+      description: Allows an authenticated user to remove their previously cast vote for a specific option.
+      operationId: removeVote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pollId
+                - optionId
+              properties:
+                pollId:
+                  type: string
+                  format: uuid
+                  description: The ID of the poll from which to remove the vote.
+                optionId:
+                  type: string
+                  format: uuid
+                  description: The ID of the option for which to remove the vote.
+      responses:
+        '200':
+          description: Vote removed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          description: Unauthorized - user not logged in.
+        '500':
+          description: Internal server error.
+      security:
+        - cookieAuth: []
+  /api/vote/user-votes:
+    get:
+      summary: Get user's votes for a specific poll
+      description: Retrieves the options an authenticated user has voted for in a given poll.
+      operationId: getUserVotes
+      parameters:
+        - in: query
+          name: pollId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The ID of the poll to retrieve user votes from.
+      responses:
+        '200':
+          description: Successfully retrieved user's voted option IDs.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+                description: An array of option IDs that the user has voted for in the poll.
+        '401':
+          description: Unauthorized - user not logged in (returns empty array if not logged in).
+        '500':
+          description: Internal server error.
+      security:
+        - cookieAuth: []
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token # Or whatever Supabase uses, typically session token.
+      description: Authentication via session cookie set by Supabase.
